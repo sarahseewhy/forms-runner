@@ -60,7 +60,7 @@ RSpec.describe ApplicationController do
       expect(log_lines[0].keys).to include("rescued_exception_trace")
       expect(log_lines[0]["rescued_exception_trace"]).to include(
         "\nCauses:",
-        "RuntimeError (inner error)",
+        "----------------RuntimeError (inner error)",
       )
     end
   end
