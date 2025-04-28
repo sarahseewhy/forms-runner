@@ -27,6 +27,9 @@ jobs:
     outputs:
       is_allowed_dependency: ${{ steps.check_if_allowed_dependency.outputs.is_allowed_dependency }}
     steps:
+      - name: Initialize default output
+        id: init
+        run: echo "is_allowed_dependency=0" >> "$GITHUB_OUTPUT"
       - name: Dependabot metadata
         id: dependabot-metadata
         uses: dependabot/fetch-metadata@v2
