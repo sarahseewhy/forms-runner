@@ -27,10 +27,8 @@ jobs:
           RUNS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$OWNER/$REPO/actions/runs?event=pull_request&branch=$PR_HEAD_REF")
 
-          echo "Fetched runs: $RUNS"
-
           # Filter for Tests workflow
-          STATUS=$(echo "$RUNS" | jq -r '.workflow_runs[] | select(.name=="Tests") | .conclusion' | head -n 1)
+          STATUS=$(echo "$RUNS" | jq -r '.workflow_runs[] | select(.name=="Tests" and .conclusion=="success") | .conclusion)
 
           echo "Detected Tests workflow status: $STATUS"
 
