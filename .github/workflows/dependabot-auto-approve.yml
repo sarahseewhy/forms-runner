@@ -28,13 +28,7 @@ jobs:
             "https://api.github.com/repos/$OWNER/$REPO/actions/runs?event=pull_request&branch=$PR_HEAD_REF")
 
           # Filter for most recent Tests workflow status
-          STATUS=$(echo "$RUNS" | jq -r --arg branch "$PR_HEAD_REF" '
-            .workflow_runs
-            | map(select(.name == "Tests" and .head_branch == $branch))
-            | sort_by(.created_at)
-            | reverse
-            | .[0]
-            | .conclusion'
+          STATUS=$(echo "$RUNS" | jq -r --arg branch "$PR_HEAD_REF" '.workflow_runs | map(select(.name == "Tests" and .head_branch == $branch)) | sort_by(.created_at) | reverse | .[0] | .conclusion')
 
           echo "Detected Tests workflow status: $STATUS"
 
