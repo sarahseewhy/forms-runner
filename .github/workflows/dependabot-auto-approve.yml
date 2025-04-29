@@ -28,7 +28,7 @@ jobs:
             "https://api.github.com/repos/$OWNER/$REPO/actions/runs?event=pull_request&branch=$PR_HEAD_REF")
 
           # Filter for Tests workflow
-          STATUS=$(echo "$RUNS" | jq -r '.workflow_runs[] | select(.name=="Tests" and .conclusion=="success") | .conclusion)
+          STATUS=$(echo "$RUNS" | jq -r '.workflow_runs[] | select(.name=="Tests" and .conclusion=="success") | .conclusion')
 
           echo "Detected Tests workflow status: $STATUS"
 
