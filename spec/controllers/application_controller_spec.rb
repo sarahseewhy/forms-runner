@@ -42,7 +42,7 @@ RSpec.describe ApplicationController do
     it "adds rescued exception to logging context" do
       get :raise_error
 
-      expect(log_lines[0]["rescued_exception"]).to eq(["RuntimeError", "oh no\nwhat happened"])
+      expect(log_lines[0]["rescued_exception"]).to eq(["------------------------RuntimeError", "oh no\nwhat happened"])
     end
 
     it "adds exception trace to logging context" do
