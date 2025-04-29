@@ -23,20 +23,43 @@ jobs:
         run: |
           echo "Checking workflow runs for branch: $PR_HEAD_REF"
 
-          # Fetch workflow runs
-          RUNS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$OWNER/$REPO/actions/runs?event=pull_request&branch=$PR_HEAD_REF")
+          # Fetch the runs and save to a file
+          curl -s -H "Authorization: token $GITHUB_TOKEN" \
+          "https://api.github.com/repos/$OWNER/$REPO/actions/runs?event=pull_request&branch=$PR_HEAD_REF" > runs.json
+
+          echo "First 10 lines of runs.json:"
+          head runs.json
+
+          echo "All workflow names found for this branch:"
+          cat runs.json | jq -r --arg branch "$PR_HEAD_REF" '.workflow_runs[] | select(.head_branch == $branch) | .name'
+
+          echo "Filtered list of 'Tests' runs:"
+          cat runs.json | jq -r --arg branch "$PR_HEAD_REF" '
+          .workflow_runs
+          | map(select(.name == "Tests" and .head_branch == $branch))
+          | map({name: .name, id: .id, status: .status, conclusion: .conclusion, created_at: .created_at})
 
           # Filter for most recent Tests workflow status
           STATUS=$(echo "$RUNS" | jq -r --arg branch "$PR_HEAD_REF" '.workflow_runs | map(select(.name == "Tests" and .head_branch == $branch)) | sort_by(.created_at) | reverse | .[0] | .conclusion')
 
-          echo "Detected Tests workflow status: $STATUS"
+          # Get the conclusion of the latest 'Tests' workflow run
+            STATUS=$(cat runs.json | jq -r --arg branch "$PR_HEAD_REF" '
+              .workflow_runs
+              | map(select(.name == "Tests" and .head_branch == $branch))
+              | sort_by(.created_at)
+              | reverse
+              | .[0]
+              | .conclusion
+            ')
 
-          if [[ "$STATUS" == "success" ]]; then
-            echo "tests_passed=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "tests_passed=false" >> "$GITHUB_OUTPUT"
-          fi
+          echo "Latest 'Tests' run conclusion: $STATUS"
+#          echo "Detected Tests workflow status: $STATUS"
+
+#          if [[ "$STATUS" == "success" ]]; then
+#            echo "tests_passed=true" >> "$GITHUB_OUTPUT"
+#          else
+#            echo "tests_passed=false" >> "$GITHUB_OUTPUT"
+#          fi
 #  validate_this_is_an_allowed_dependency:
 #    needs: validate_dependabot_opened_this_PR
 #    runs-on: ubuntu-latest
