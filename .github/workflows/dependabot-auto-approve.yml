@@ -40,17 +40,17 @@ jobs:
           | map({name: .name, id: .id, status: .status, conclusion: .conclusion, created_at: .created_at})
 
           # Filter for most recent Tests workflow status
-          STATUS=$(echo "$RUNS" | jq -r --arg branch "$PR_HEAD_REF" '.workflow_runs | map(select(.name == "Tests" and .head_branch == $branch)) | sort_by(.created_at) | reverse | .[0] | .conclusion')
+          STATUS=$(echo "$RUNS" | jq -r --arg branch "$PR_HEAD_REF" '.workflow_runs | map(select(.name == "Tests" and .head_branch == $branch)) | sort_by(.created_at) | reverse | .[0] | .conclusion || echo ""')
 
           # Get the conclusion of the latest 'Tests' workflow run
-            STATUS=$(cat runs.json | jq -r --arg branch "$PR_HEAD_REF" '
-              .workflow_runs
-              | map(select(.name == "Tests" and .head_branch == $branch))
-              | sort_by(.created_at)
-              | reverse
-              | .[0]
-              | .conclusion
-            ')
+          STATUS=$(cat runs.json | jq -r --arg branch "$PR_HEAD_REF" '
+            .workflow_runs
+            | map(select(.name == "Tests" and .head_branch == $branch))
+            | sort_by(.created_at)
+            | reverse
+            | .[0]
+            | .conclusion
+          ')
 
           echo "Latest 'Tests' run conclusion: $STATUS"
 #          echo "Detected Tests workflow status: $STATUS"
