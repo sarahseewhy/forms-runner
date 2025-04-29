@@ -8,6 +8,37 @@ jobs:
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
       - run: echo "This PR was raised by Dependabot"
+  validate_checks_passed:
+    runs-on: ubuntu-latest
+    outputs:
+      tests_passed: ${{ steps.check.outputs.tests_passed }}
+    steps:
+      - name: Check if Tests workflow completed successfully
+        id: check
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
+          OWNER: ${{ github.repository_owner }}
+          REPO: ${{ github.event.repository.name }}
+        run: |
+          echo "Checking workflow runs for branch: $PR_HEAD_REF"
+
+          # Fetch workflow runs
+          RUNS=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
+            "https://api.github.com/repos/$OWNER/$REPO/actions/runs?event=pull_request&branch=$PR_HEAD_REF")
+
+          echo "Fetched runs: $RUNS"
+
+          # Filter for Tests workflow
+          STATUS=$(echo "$RUNS" | jq -r '.workflow_runs[] | select(.name=="Tests") | .conclusion' | head -n 1)
+
+          echo "Detected Tests workflow status: $STATUS"
+
+          if [[ "$STATUS" == "success" ]]; then
+            echo "tests_passed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "tests_passed=false" >> "$GITHUB_OUTPUT"
+          fi
 #  validate_this_is_an_allowed_dependency:
 #    needs: validate_dependabot_opened_this_PR
 #    runs-on: ubuntu-latest
