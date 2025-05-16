@@ -20,9 +20,6 @@ jobs:
       - if: ${{ !contains(steps.dependabot-metadata.outputs.package-ecosystem, 'npm') && (steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch') }}
         id: check_if_allowed_dependency
         run: |
-          echo "Package ecosystem: ${{ steps.dependabot-metadata.outputs.package-ecosystem }}"
-          echo "Update type: ${{ steps.dependabot-metadata.outputs.update-type }}"
-          echo "check_if_allowed_dependency conditional result: ${{ !contains(steps.dependabot-metadata.outputs.package-ecosystem, 'npm') && (steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch') }}"
           echo "is_allowed_dependency=1" >> "$GITHUB_OUTPUT"
   auto_approve_and_merge:
     runs-on: ubuntu-latest
@@ -32,7 +29,6 @@ jobs:
       - uses: actions/checkout@v4
       - name: Approve a PR if not already approved
         run: |
-          echo "Output from validate_this_is_an_allowed_dependency: ${{ needs.validate_this_is_an_allowed_dependency.outputs.is_allowed_dependency == 1 }}"
           gh pr checkout "$PR_URL" # sets the upstream metadata for `gh pr status`
 
           if [ "$(gh pr status --json reviewDecision -q .currentBranch.reviewDecision)" != "APPROVED" ];
