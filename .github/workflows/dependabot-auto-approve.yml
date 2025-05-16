@@ -8,80 +8,32 @@ jobs:
     if: github.event.pull_request.user.login == 'dependabot[bot]'
     steps:
       - run: echo "This PR was raised by Dependabot"
-  validate_checks_passed:
+  validate_this_is_an_allowed_dependency:
+    needs: validate_dependabot_opened_this_PR
     runs-on: ubuntu-latest
-    outputs:
-      tests_passed: ${{ steps.check.outputs.tests_passed }}
     steps:
-      - name: Check if Tests workflow completed successfully
-        id: check
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          PR_HEAD_REF: ${{ github.event.pull_request.head.ref }}
-          OWNER: ${{ github.repository_owner }}
-          REPO: ${{ github.event.repository.name }}
+      - name: Dependabot metadata
+        id: dependabot-metadata
+        uses: dependabot/fetch-metadata@v2
+      - if: "!contains(steps.dependabot-metadata.outputs.package-ecosystem, 'npm') && (steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch')"
+        id: check_if_allowed_dependency
+        run: echo "is_allowed_dependency=1" >> "$GITHUB_OUTPUT"
+  auto_approve_and_merge:
+    runs-on: ubuntu-latest
+    needs: [validate_dependabot_opened_this_PR, validate_this_is_an_allowed_dependency]
+    if: ${{ needs.validate_this_is_an_allowed_dependency.outputs.is_allowed_dependency == 1 }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Approve a PR if not already approved
         run: |
-          echo "Checking workflow runs for branch: $PR_HEAD_REF"
-
-          # Fetch the runs and save to a file
-          curl -s -H "Authorization: token $GITHUB_TOKEN" \
-          "https://api.github.com/repos/$OWNER/$REPO/actions/runs?event=pull_request&branch=$PR_HEAD_REF" > runs.json
-
-          echo "First 10 lines of runs.json:"
-          head runs.json
-
-          echo "All workflow names found for this branch:"
-          cat runs.json | jq -r --arg branch "$PR_HEAD_REF" '.workflow_runs[] | select(.head_branch == $branch) | .name'
-
-          echo "Filtered list of 'Tests' runs:"
-          cat runs.json | jq -r --arg branch "$PR_HEAD_REF" '.workflow_runs | map(select(.name == "Tests" and .head_branch == $branch)) | map({name: .name, id: .id, status: .status, conclusion: .conclusion, created_at: .created_at})
-
-          # Get the conclusion of the latest 'Tests' workflow run
-          STATUS=$(cat runs.json | jq -r --arg branch "$PR_HEAD_REF" '.workflow_runs | map(select(.name == "Tests" and .head_branch == $branch)) | sort_by(.created_at) | reverse | .[0] | .conclusion || echo ""')
-
-          echo "Latest 'Tests' run conclusion: $STATUS"
-#          echo "Detected Tests workflow status: $STATUS"
-
-#          if [[ "$STATUS" == "success" ]]; then
-#            echo "tests_passed=true" >> "$GITHUB_OUTPUT"
-#          else
-#            echo "tests_passed=false" >> "$GITHUB_OUTPUT"
-#          fi
-#  validate_this_is_an_allowed_dependency:
-#    needs: validate_dependabot_opened_this_PR
-#    runs-on: ubuntu-latest
-#    outputs:
-#      is_allowed_dependency: ${{ steps.check_if_allowed_dependency.outputs.is_allowed_dependency }}
-#    steps:
-#      - name: Dump event
-#        run: echo "${{ toJson(github.event.workflow_run) }}"
-#      - name: Initialize default output
-#        id: init
-#        run: echo "is_allowed_dependency=0" >> "$GITHUB_OUTPUT"
-#      - name: Dependabot metadata
-#        id: dependabot-metadata
-#        uses: dependabot/fetch-metadata@v2
-#      - if: "!contains(steps.dependabot-metadata.outputs.package-ecosystem, 'npm') && (steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch')"
-#        id: check_if_allowed_dependency
-#        run: echo "is_allowed_dependency=1" >> "$GITHUB_OUTPUT"
-#  auto_approve_and_merge:
-#    runs-on: ubuntu-latest
-#    needs: [validate_checks_have_passed, validate_dependabot_opened_this_PR, validate_this_is_an_allowed_dependency]
-#    if: ${{ needs.validate_this_is_an_allowed_dependency.outputs.is_allowed_dependency == 1 }}
-#    steps:
-#      - uses: actions/checkout@v4
-#      - name: Dump event
-#        run: echo "${{ toJson(github.event.workflow_run) }}"
-#      - name: Approve a PR if not already approved
-#        run: |
-#          gh pr checkout "$PR_URL" # sets the upstream metadata for `gh pr status`
-#          if [ "$(gh pr status --json reviewDecision -q .currentBranch.reviewDecision)" != "APPROVED" ];
-#          then gh pr review --approve "$PR_URL"
-#          else echo "PR already approved, skipping additional approvals to minimize emails/notification noise.";
-#          fi
-#        env:
-#          PR_URL: ${{github.event.pull_request.html_url}}
-#          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+          gh pr checkout "$PR_URL" # sets the upstream metadata for `gh pr status`
+          if [ "$(gh pr status --json reviewDecision -q .currentBranch.reviewDecision)" != "APPROVED" ];
+          then gh pr review --approve "$PR_URL"
+          else echo "PR already approved, skipping additional approvals to minimize emails/notification noise.";
+          fi
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
       # - name: Enable auto-merge for Dependabot PRs
       #   run: gh pr merge --auto --merge "$PR_URL"
       #   env:
