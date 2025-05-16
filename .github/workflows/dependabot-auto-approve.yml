@@ -20,8 +20,8 @@ jobs:
       - if: ${{ !contains(steps.dependabot-metadata.outputs.package-ecosystem, 'npm') && (steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch') }}
         id: check_if_allowed_dependency
         run: |
-          echo "Package ecosystem: ${{ steps.dependabot-metadata.outputs.package-ecosystem }}
-          echo "Update type: ${{ steps.dependabot-metadata.outputs.update-type }}
+          echo "Package ecosystem: ${{ steps.dependabot-metadata.outputs.package-ecosystem }}"
+          echo "Update type: ${{ steps.dependabot-metadata.outputs.update-type }}"
           echo "check_if_allowed_dependency conditional result: ${{ !contains(steps.dependabot-metadata.outputs.package-ecosystem, 'npm') && (steps.dependabot-metadata.outputs.update-type == 'version-update:semver-patch') }}"
           echo "is_allowed_dependency=1" >> "$GITHUB_OUTPUT"
   auto_approve_and_merge:
@@ -42,8 +42,9 @@ jobs:
         env:
           PR_URL: ${{github.event.pull_request.html_url}}
           GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
-      # - name: Enable auto-merge for Dependabot PRs
-      #   run: gh pr merge --auto --merge "$PR_URL"
-      #   env:
-      #     PR_URL: ${{github.event.pull_request.html_url}}
-      #     GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Enable auto-merge for Dependabot PRs
+        run: gh pr merge --auto --merge "$PR_URL"
+        env:
+          PR_URL: ${{github.event.pull_request.html_url}}
+          GH_TOKEN: ${{secrets.GITHUB_TOKEN}}
