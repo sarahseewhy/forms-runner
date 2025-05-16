@@ -43,16 +43,19 @@ jobs:
             RESPONSE=$(curl -s -H "Authorization: token $GH_TOKEN" \
               "https://api.github.com/repos/$REPO/commits/$SHA/check-runs")
 
+            # Exclude wait_for_checks
+            EXCLUDED_CHECK="wait_for_checks"
+
             # Extract conclusions
             CONCLUSIONS=$(echo "$RESPONSE" | jq -r '.check_runs[] | .name + ":" + (.status + "/" + (.conclusion // "none"))')
 
             echo "$CONCLUSIONS"
 
             # Are there any in_progress or queued?
-            PENDING=$(echo "$RESPONSE" | jq -r '[.check_runs[] | select(.status != "completed")] | length')
+            PENDING=$(echo "$RESPONSE" | jq -r --arg exclude "$EXCLUDED_CHECK" '[.check_runs[] | select(.name != $exclude and .status != "completed")] | length')
 
             # Are all completed and successful?
-            FAILED=$(echo "$RESPONSE" | jq -r '[.check_runs[] | select(.status == "completed" and .conclusion != "success")] | length')
+            FAILED=$(echo "$RESPONSE" | jq -r --arg exclude "$EXCLUDED_CHECK" '[.check_runs[] | select(.name != $exclude and .status == "completed" and .conclusion != "success")] | length')
 
             if [ "$PENDING" -eq 0 ] && [ "$FAILED" -eq 0 ]; then
               echo "All checks completed successfully."
