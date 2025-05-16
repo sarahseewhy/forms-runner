@@ -46,8 +46,10 @@ jobs:
             # Exclude wait_for_checks
             EXCLUDED_CHECK="wait_for_checks"
 
+            echo "Ignoring ${EXCLUDED_CHECK}"
+
             # Extract conclusions
-            CONCLUSIONS=$(echo "$RESPONSE" | jq -r '.check_runs[] | .name + ":" + (.status + "/" + (.conclusion // "none"))')
+            CONCLUSIONS=$(echo "$RESPONSE" | jq -r '.check_runs[] | select(.name != "wait_for_checks") | .name + ":" + (.status + "/" + (.conclusion // "none"))')
 
             echo "$CONCLUSIONS"
 
